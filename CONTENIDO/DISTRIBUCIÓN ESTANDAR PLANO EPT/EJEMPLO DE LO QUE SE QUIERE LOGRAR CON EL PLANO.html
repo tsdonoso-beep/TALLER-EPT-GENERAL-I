@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taller de Ebanistería · GEB</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --ink:    #1c1814;
+  --paper:  #f5f0e8;
+  --cream:  #ede5d4;
+  --wood:   #b5763a;
+  --wood2:  #8a4e1e;
+  --steel:  #4a7fa5;
+  --sage:   #5a8a6a;
+  --rust:   #b84a2a;
+  --amber:  #c89040;
+  --muted:  #8a7e6e;
+  --border: #d4c9b4;
+  --mob:    #b5763a;
+  --com:    #4a7fa5;
+  --esp:    #b84a2a;
+  --mat:    #5a8a6a;
+  --her:    #7a5a9a;
+}
+
+body {
+  background: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── INTRO SCREEN ──────────────────────────────── */
+#intro {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 24px;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+#intro.exit { opacity: 0; transform: scale(1.03); pointer-events: none; }
+
+.intro-eyebrow {
+  font-size: 10px; letter-spacing: 5px; color: var(--wood);
+  text-transform: uppercase; opacity: 0;
+  animation: fadeUp 0.6s 0.3s ease forwards;
+}
+.intro-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 6vw, 72px);
+  color: var(--paper); line-height: 1.1; text-align: center;
+  opacity: 0; animation: fadeUp 0.6s 0.6s ease forwards;
+}
+.intro-title em { color: var(--wood); font-style: italic; }
+.intro-sub {
+  font-size: 11px; color: var(--muted); letter-spacing: 2px;
+  text-align: center; max-width: 400px; line-height: 1.8;
+  opacity: 0; animation: fadeUp 0.6s 0.9s ease forwards;
+}
+.intro-line {
+  width: 60px; height: 1px; background: var(--wood);
+  opacity: 0; animation: fadeUp 0.6s 1.1s ease forwards;
+}
+.intro-btn {
+  background: var(--wood); color: var(--paper);
+  border: none; padding: 14px 40px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0; animation: fadeUp 0.6s 1.3s ease forwards;
+  transition: background 0.2s, transform 0.2s;
+}
+.intro-btn:hover { background: var(--wood2); transform: translateY(-2px); }
+
+.intro-badges {
+  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+  opacity: 0; animation: fadeUp 0.6s 1.5s ease forwards;
+}
+.intro-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 9px; letter-spacing: 1px; color: var(--muted);
+  padding: 4px 10px; border: 1px solid #2a2520;
+}
+.intro-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ── MAIN APP ──────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; opacity: 0; transition: opacity 0.6s; }
+#app.visible { opacity: 1; }
+
+/* TOP BAR */
+#topbar {
+  height: 52px; background: var(--paper);
+  border-bottom: 2px solid var(--ink);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 0;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.tb-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px; font-weight: 700; color: var(--ink);
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tb-logo span { color: var(--wood); }
+
+/* ZONE TABS */
+.zone-tabs {
+  display: flex; height: 100%;
+  margin-left: 16px; gap: 2px;
+}
+.ztab {
+  height: 100%; padding: 0 16px;
+  border: none; background: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.ztab:hover { color: var(--ink); }
+.ztab.active { color: var(--ink); border-bottom-color: var(--wood); font-weight: 500; }
+
+/* CAT FILTERS */
+.cat-filters {
+  margin-left: auto;
+  display: flex; gap: 4px;
+}
+.cfilter {
+  padding: 4px 10px; border: 1px solid var(--border);
+  background: none; font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: 1px; cursor: pointer;
+  color: var(--muted); transition: all 0.15s; text-transform: uppercase;
+}
+.cfilter:hover { border-color: var(--ink); color: var(--ink); }
+.cfilter.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.cfilter[data-c="MOB"].active { background: var(--mob); border-color: var(--mob); }
+.cfilter[data-c="COM"].active { background: var(--com); border-color: var(--com); }
+.cfilter[data-c="ESP"].active { background: var(--esp); border-color: var(--esp); }
+.cfilter[data-c="MAT"].active { background: var(--mat); border-color: var(--mat); }
+.cfilter[data-c="HER"].active { background: var(--her); border-color: var(--her); }
+
+/* CANVAS AREA */
+#stage {
+  flex: 1; position: relative; overflow: hidden;
+  background: var(--cream);
+}
+
+/* FLOOR PLAN SVG */
+#plan-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#plan-svg {
+  transform-origin: center;
+  transition: transform 0.7s cubic-bezier(0.16,1,0.3,1);
+  cursor: grab; user-select: none;
+}
+#plan-svg:active { cursor: grabbing; }
+
+/* Zone areas */
+.z-area {
+  fill: white; stroke: #c8b89a;
+  stroke-width: 1.5; rx: 3;
+  cursor: pointer;
+  transition: fill 0.25s, stroke 0.25s;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+}
+.z-area:hover { fill: #fdf8f0; stroke: var(--wood); }
+.z-area.active { fill: #fef9f0; stroke: var(--wood); stroke-width: 2.5; }
+
+.z-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7.5px; fill: var(--muted);
+  letter-spacing: 2px; text-transform: uppercase;
+  pointer-events: none;
+}
+.z-label.active { fill: var(--wood2); }
+
+/* MINI 3D LABELS on floor plan */
+.item-marker {
+  cursor: pointer;
+}
+.item-marker:hover .marker-top { opacity: 0.75; }
+.item-marker:hover .marker-label { font-weight: 600; }
+
+/* ZOOM HINT */
+.zoom-hint {
+  position: absolute; bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px; letter-spacing: 2px; color: var(--muted);
+  background: rgba(245,240,232,0.9);
+  padding: 6px 14px; border: 1px solid var(--border);
+  pointer-events: none;
+  animation: fadeOut 3s 2s ease forwards;
+}
+@keyframes fadeOut { to { opacity: 0; } }
+
+/* ZOOM CONTROLS */
+.zoom-ctrl {
+  position: absolute; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.zbtn {
+  width: 34px; height: 34px;
+  background: var(--paper); border: 1px solid var(--border);
+  color: var(--ink); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.zbtn:hover { background: var(--ink); color: var(--paper); }
+
+/* LEGEND */
+.legend {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(245,240,232,0.95);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.legend-title { font-size: 7px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+.legend-row { display: flex; align-items: center; gap: 7px; font-size: 9px; color: var(--ink); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── DETAIL PANEL ──────────────────────────────── */
+#detail-panel {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 360px; background: var(--paper);
+  border-left: 2px solid var(--ink);
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  display: flex; flex-direction: column;
+  z-index: 20;
+}
+#detail-panel.open { transform: translateX(0); }
+
+.dp-header {
+  padding: 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.dp-cat-line {
+  width: 4px; align-self: stretch; flex-shrink: 0;
+  border-radius: 2px;
+}
+.dp-titles { flex: 1; }
+.dp-code { font-size: 9px; letter-spacing: 2px; color: var(--muted); margin-bottom: 4px; }
+.dp-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px; line-height: 1.3; color: var(--ink);
+}
+.dp-close {
+  background: none; border: 1px solid var(--border);
+  width: 28px; height: 28px; cursor: pointer;
+  font-size: 13px; color: var(--muted); flex-shrink: 0;
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+}
+.dp-close:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* 3D CANVAS */
+#dp-canvas-wrap {
+  position: relative;
+  background: var(--ink);
+  height: 220px; flex-shrink: 0;
+}
+#dp-canvas { display: block; width: 100%; height: 100%; }
+.canvas-label {
+  position: absolute; bottom: 8px; left: 12px;
+  font-size: 8px; letter-spacing: 2px; color: #6a6258;
+  text-transform: uppercase;
+}
+.wire-toggle {
+  position: absolute; bottom: 8px; right: 12px;
+  background: none; border: 1px solid #2a2520;
+  color: #6a6258; font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; padding: 3px 8px; cursor: pointer; letter-spacing: 1px;
+  transition: all 0.15s;
+}
+.wire-toggle:hover, .wire-toggle.on { border-color: var(--steel); color: var(--steel); }
+
+/* PROPS */
+.dp-props { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.dp-props::-webkit-scrollbar { width: 3px; }
+.dp-props::-webkit-scrollbar-thumb { background: var(--border); }
+
+.prop-section { margin-bottom: 18px; }
+.prop-section-title {
+  font-size: 7px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.prop-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid #ede5d4;
+  font-size: 10px;
+}
+.prop-item:last-child { border: none; }
+.prop-key { color: var(--muted); }
+.prop-val { color: var(--ink); font-weight: 500; }
+.prop-val.dim { color: var(--steel); }
+.prop-val.zone { color: var(--sage); }
+.prop-val.qty { color: var(--wood); font-size: 13px; }
+.prop-val.approx { color: var(--amber); font-size: 9px; }
+
+/* cat badge */
+.dp-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; font-size: 8px; letter-spacing: 1px;
+  margin-top: 6px;
+}
+
+/* ── ITEM LIST (bottom strip when no item selected) ──── */
+#item-strip {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(245,240,232,0.97);
+  border-top: 2px solid var(--ink);
+  max-height: 160px;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.3s;
+}
+#item-strip.hidden { transform: translateY(100%); opacity: 0; }
+#strip-inner {
+  display: flex; gap: 8px; padding: 12px 16px;
+  overflow-x: auto; align-items: stretch;
+}
+#strip-inner::-webkit-scrollbar { height: 3px; }
+#strip-inner::-webkit-scrollbar-thumb { background: var(--border); }
+
+.strip-card {
+  flex-shrink: 0; width: 130px;
+  background: white; border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
+  padding: 10px; cursor: pointer;
+  transition: all 0.15s; display: flex; flex-direction: column; gap: 4px;
+}
+.strip-card:hover { border-top-color: var(--wood); transform: translateY(-2px); }
+.strip-card[data-c="MOB"] { border-top-color: var(--mob); }
+.strip-card[data-c="COM"] { border-top-color: var(--com); }
+.strip-card[data-c="ESP"] { border-top-color: var(--esp); }
+.strip-card[data-c="MAT"] { border-top-color: var(--mat); }
+.strip-card[data-c="HER"] { border-top-color: var(--her); }
+.sc-code { font-size: 8px; letter-spacing: 1px; color: var(--muted); }
+.sc-name { font-size: 9px; color: var(--ink); line-height: 1.4; flex: 1; }
+.sc-qty { font-size: 8px; color: var(--wood); align-self: flex-end; }
+
+/* strip title */
+.strip-title {
+  position: absolute; top: -1px; left: 16px;
+  transform: translateY(-100%);
+  background: var(--paper); border: 2px solid var(--ink);
+  border-bottom: none; padding: 4px 12px;
+  font-size: 8px; letter-spacing: 2px; color: var(--ink); text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<!-- ── INTRO ─────────────────────────────────── -->
+<div id="intro">
+  <div class="intro-eyebrow">Consorcio Talleres Especializados I · GEB-ARQ</div>
+  <div class="intro-title">Taller de<br><em>Ebanistería</em></div>
+  <div class="intro-line"></div>
+  <div class="intro-sub">Guía interactiva de distribución de bienes<br>I.E. Guillermo E. Billinghurst</div>
+  <div class="intro-badges">
+    <div class="intro-badge"><div class="dot" style="background:#b5763a"></div>Mobiliario</div>
+    <div class="intro-badge"><div class="dot" style="background:#4a7fa5"></div>Complementario</div>
+    <div class="intro-badge"><div class="dot" style="background:#b84a2a"></div>Máquinas</div>
+    <div class="intro-badge"><div class="dot" style="background:#5a8a6a"></div>Materiales</div>
+    <div class="intro-badge"><div class="dot" style="background:#7a5a9a"></div>Herramientas</div>
+  </div>
+  <button class="intro-btn" onclick="enterApp()">Explorar taller →</button>
+</div>
+
+<!-- ── APP ───────────────────────────────────── -->
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo">Ebanistería <span>·GEB</span></div>
+    <div class="zone-tabs">
+      <button class="ztab active" data-z="ALL" onclick="setZone('ALL',this)">⬡ Vista completa</button>
+      <button class="ztab" data-z="HABILITADO" onclick="setZone('HABILITADO',this)">🪚 Habilitado</button>
+      <button class="ztab" data-z="ARMADO" onclick="setZone('ARMADO',this)">🪑 Armado</button>
+      <button class="ztab" data-z="ACABADOS" onclick="setZone('ACABADOS',this)">🎨 Acabados</button>
+      <button class="ztab" data-z="INNOVACION" onclick="setZone('INNOVACION',this)">💡 Innovación</button>
+      <button class="ztab" data-z="DEPOSITO" onclick="setZone('DEPOSITO',this)">📦 Depósito</button>
+    </div>
+    <div class="cat-filters">
+      <button class="cfilter active" data-c="ALL" onclick="setCat('ALL',this)">Todos</button>
+      <button class="cfilter" data-c="MOB" onclick="setCat('MOB',this)">MOB</button>
+      <button class="cfilter" data-c="COM" onclick="setCat('COM',this)">COM</button>
+      <button class="cfilter" data-c="ESP" onclick="setCat('ESP',this)">ESP</button>
+      <button class="cfilter" data-c="MAT" onclick="setCat('MAT',this)">MAT</button>
+      <button class="cfilter" data-c="HER" onclick="setCat('HER',this)">HER</button>
+    </div>
+  </div>
+
+  <div id="stage">
+    <!-- FLOOR PLAN -->
+    <div id="plan-wrap">
+      <svg id="plan-svg" viewBox="0 0 860 560" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <div class="legend-title">Categorías</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#b5763a"></div>MOB · Mobiliario</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#4a7fa5"></div>COM · Complementario</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#b84a2a"></div>ESP · Máquinas</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#5a8a6a"></div>MAT · Materiales</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#7a5a9a"></div>HER · Herramientas</div>
+    </div>
+
+    <!-- ZOOM -->
+    <div class="zoom-ctrl">
+      <button class="zbtn" onclick="doZoom(1.25)">+</button>
+      <button class="zbtn" onclick="resetView()">⊙</button>
+      <button class="zbtn" onclick="doZoom(0.8)">−</button>
+    </div>
+
+    <div class="zoom-hint">Clic derecho + arrastrar para mover · Scroll para zoom · Clic izquierdo en elemento para detalle</div>
+
+    <!-- DETAIL PANEL -->
+    <div id="detail-panel">
+      <div class="dp-header">
+        <div class="dp-cat-line" id="dp-cat-line"></div>
+        <div class="dp-titles">
+          <div class="dp-code" id="dp-code">—</div>
+          <div class="dp-name" id="dp-name">—</div>
+          <div id="dp-badge"></div>
+        </div>
+        <button class="dp-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div id="dp-canvas-wrap">
+        <canvas id="dp-canvas"></canvas>
+        <div class="canvas-label">Vista 3D · Modelo aproximado</div>
+        <button class="wire-toggle" id="wire-btn" onclick="toggleWire()">WIREFRAME</button>
+      </div>
+      <div class="dp-props" id="dp-props"></div>
+    </div>
+
+    <!-- ITEM STRIP -->
+    <div id="item-strip">
+      <div class="strip-title" id="strip-title">Elementos</div>
+      <div id="strip-inner"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const ITEMS = [
+  { id:"MOB-105", cat:"MOB", name:"Armario de Metal", zona:"HABILITADO", cant:1, dims:[450,1000,1800], px:490, py:95, icon:"🗄" },
+  { id:"MOB-108", cat:"MOB", name:"Mesa de Trabajo", zona:"ARMADO", cant:4, dims:[1500,700,850], px:295, py:145, icon:"🪑" },
+  { id:"MOB-114", cat:"MOB", name:"Mesa para Estudiante (1.00×0.60×0.90m)", zona:"INNOVACION", cant:15, dims:[1000,600,900], px:580, py:410, icon:"🪑" },
+  { id:"MOB-117", cat:"MOB", name:"Silla para Estudiante", zona:"INNOVACION", cant:15, dims:[450,450,800], px:620, py:390, icon:"🪑" },
+  { id:"MOB-118", cat:"MOB", name:"Silla para Docente", zona:"INNOVACION", cant:1, dims:[500,500,900], px:540, py:370, icon:"🪑" },
+  { id:"MOB-126", cat:"MOB", name:"Banco de Trabajo con Tornillo (3000×1100×850mm)", zona:"HABILITADO", cant:6, dims:[3000,1100,850], px:610, py:160, icon:"🪚" },
+  { id:"MOB-140", cat:"MOB", name:"Mesa de Corte Grande", zona:"HABILITADO", cant:1, dims:[2400,1200,900], px:530, py:190, icon:"🪚" },
+  { id:"MOB-152", cat:"MOB", name:"Mueble Bajo (1000×600×900mm)", zona:"INNOVACION", cant:3, dims:[1000,600,900], px:760, py:430, icon:"🗄" },
+  { id:"MOB-168", cat:"MOB", name:"Mesa de Docente (1.20×0.60×0.90m)", zona:"INNOVACION", cant:1, dims:[1200,600,900], px:560, py:350, icon:"🪑" },
+  { id:"MOB-169", cat:"MOB", name:"Mesa Computadora Estudiante", zona:"INNOVACION", cant:14, dims:[1000,600,750], px:680, py:410, icon:"🪑" },
+
+  { id:"COM-103", cat:"COM", name:"Extintor PQS", zona:"HABILITADO", cant:4, dims:[180,180,600], px:790, py:55, icon:"🧯" },
+  { id:"COM-119", cat:"COM", name:"Botiquín de Primeros Auxilios", zona:"ACABADOS", cant:2, dims:[300,120,400], px:60, py:60, icon:"🩺" },
+  { id:"COM-120", cat:"COM", name:"Pizarra Acrílica", zona:"INNOVACION", cant:4, dims:[2400,50,1200], px:555, py:330, icon:"📋" },
+  { id:"COM-121", cat:"COM", name:"Proyector Multimedia", zona:"INNOVACION", cant:1, dims:[300,250,120], px:590, py:340, icon:"📽" },
+  { id:"COM-204", cat:"COM", name:"Panel Interactivo Magnético", zona:"INNOVACION", cant:3, dims:[2000,50,1200], px:720, py:335, icon:"📋" },
+  { id:"COM-300", cat:"COM", name:"Computadora de Escritorio", zona:"INNOVACION", cant:15, dims:[450,200,400], px:660, py:390, icon:"💻" },
+  { id:"COM-233", cat:"COM", name:"Medidor de Humedad Digital", zona:"HABILITADO", cant:1, dims:[150,50,250], px:730, py:95, icon:"📏" },
+
+  { id:"ESP-128", cat:"ESP", name:"Trompo / Tupí", zona:"HABILITADO", cant:1, dims:[700,600,1100], px:700, py:80, icon:"⚙️" },
+  { id:"ESP-138", cat:"ESP", name:"Lijadora de Banda y Disco", zona:"HABILITADO", cant:1, dims:[800,600,1200], px:760, py:200, icon:"⚙️" },
+  { id:"ESP-139", cat:"ESP", name:"Sierra Cinta", zona:"HABILITADO", cant:1, dims:[700,600,1800], px:720, py:200, icon:"⚙️" },
+  { id:"ESP-152", cat:"ESP", name:"Cepilladora", zona:"HABILITADO", cant:1, dims:[1500,700,1100], px:650, py:80, icon:"⚙️" },
+  { id:"ESP-155", cat:"ESP", name:"Lijadora Orbital de Columna", zona:"ARMADO", cant:1, dims:[500,500,1200], px:245, py:80, icon:"⚙️" },
+  { id:"ESP-187", cat:"ESP", name:"Fresadora CNC (1500×900mm)", zona:"HABILITADO", cant:2, dims:[2000,1200,1300], px:780, py:155, icon:"🤖" },
+  { id:"ESP-219", cat:"ESP", name:"Cortadora Láser CO2", zona:"HABILITADO", cant:1, dims:[900,700,1000], px:675, py:200, icon:"⚡" },
+  { id:"ESP-239", cat:"ESP", name:"Esmeril de Columna", zona:"ACABADOS", cant:1, dims:[400,400,1100], px:185, py:210, icon:"⚙️" },
+  { id:"ESP-242", cat:"ESP", name:"Prensa Hidráulica", zona:"ARMADO", cant:1, dims:[600,500,1500], px:390, py:80, icon:"⚙️" },
+  { id:"ESP-329", cat:"ESP", name:"Sierra Radial", zona:"HABILITADO", cant:1, dims:[800,700,1200], px:530, py:80, icon:"🪚" },
+  { id:"ESP-345", cat:"ESP", name:"Torno para Madera", zona:"ARMADO", cant:1, dims:[1200,500,1100], px:265, py:200, icon:"⚙️" },
+  { id:"ESP-347", cat:"ESP", name:"Taladro de Columna", zona:"ARMADO", cant:1, dims:[400,400,1700], px:390, py:200, icon:"🔩" },
+  { id:"ESP-349", cat:"ESP", name:"Ruteadora CNC", zona:"HABILITADO", cant:1, dims:[1800,1200,1400], px:790, py:110, icon:"🤖" },
+  { id:"ESP-355", cat:"ESP", name:"Sierra Circular de Mesa", zona:"ARMADO", cant:1, dims:[1000,700,1100], px:295, py:80, icon:"🪚" },
+  { id:"ESP-356", cat:"ESP", name:"Cortadora Láser CO2 (1500×900mm)", zona:"HABILITADO", cant:1, dims:[1800,1000,1200], px:595, py:200, icon:"⚡" },
+  { id:"ESP-371", cat:"ESP", name:"Máquina Engalletadora", zona:"ARMADO", cant:3, dims:[400,300,300], px:345, py:200, icon:"⚙️" },
+
+  { id:"MAT-123", cat:"MAT", name:"Tablero MDF 1.83×2.44m e=18mm", zona:"DEPOSITO", cant:10, dims:[1830,18,2440], px:100, py:390, icon:"🪵" },
+  { id:"MAT-161", cat:"MAT", name:"Tablero de Melanina Blanca", zona:"DEPOSITO", cant:6, dims:[1830,18,2440], px:135, py:405, icon:"🪵" },
+  { id:"MAT-163", cat:"MAT", name:"Madera Aserrada Tornillo", zona:"DEPOSITO", cant:20, dims:[2400,50,100], px:170, py:420, icon:"🪵" },
+  { id:"MAT-231", cat:"MAT", name:"Cola Sintética (litro)", zona:"HABILITADO", cant:21, dims:[120,120,250], px:460, py:95, icon:"🧴" },
+  { id:"MAT-309", cat:"MAT", name:"Sellador Laca", zona:"ACABADOS", cant:6, dims:[400,200,300], px:110, py:160, icon:"🧴" },
+
+  { id:"HER-138", cat:"HER", name:"Mazo de Goma", zona:"ARMADO", cant:1, dims:[120,120,350], px:355, py:265, icon:"🔨" },
+  { id:"HER-140", cat:"HER", name:"Juego de Formones", zona:"ARMADO", cant:4, dims:[300,60,30], px:375, py:265, icon:"🔨" },
+  { id:"HER-169", cat:"HER", name:"Sargentas 120cm", zona:"ARMADO", cant:12, dims:[1200,50,80], px:395, py:265, icon:"🔧" },
+  { id:"HER-175", cat:"HER", name:"Prensa C Grande", zona:"ARMADO", cant:75, dims:[200,100,300], px:415, py:265, icon:"🔧" },
+  { id:"HER-186", cat:"HER", name:"Lijadora Orbital Portátil", zona:"ACABADOS", cant:4, dims:[300,150,120], px:155, py:160, icon:"🔧" },
+  { id:"HER-189", cat:"HER", name:"Juego de Cepillos de Carpintería", zona:"HABILITADO", cant:4, dims:[350,80,120], px:460, py:115, icon:"🔨" },
+];
+
+const ZONE_DEFS = {
+  HABILITADO: { label:"HABILITADO Y MAQUINADO", x:440, y:40, w:380, h:290, cx:630, cy:185 },
+  ARMADO:     { label:"ÁREA DE ARMADO", x:220, y:40, w:220, h:290, cx:330, cy:185 },
+  ACABADOS:   { label:"ÁREA DE ACABADOS", x:40, y:40, w:180, h:290, cx:130, cy:185 },
+  DEPOSITO:   { label:"DEPÓSITO / ALMACÉN", x:40, y:330, w:280, h:185, cx:180, cy:422 },
+  INNOVACION: { label:"INNOVACIÓN · GESTIÓN Y DISEÑO", x:320, y:330, w:500, h:185, cx:570, cy:422 },
+};
+
+const CAT_COLORS = { MOB:"#b5763a", COM:"#4a7fa5", ESP:"#b84a2a", MAT:"#5a8a6a", HER:"#7a5a9a" };
+const CAT_LABELS = { MOB:"Mobiliario", COM:"Complementario", ESP:"Máquinas Especializadas", MAT:"Materiales", HER:"Herramientas" };
+const ZONE_VIEWS = {
+  ALL:        { tx:0,    ty:0,   sc:1    },
+  HABILITADO: { tx:-130, ty:30,  sc:1.65 },
+  ARMADO:     { tx:50,   ty:30,  sc:1.75 },
+  ACABADOS:   { tx:150,  ty:30,  sc:2.0  },
+  DEPOSITO:   { tx:120,  ty:-90, sc:2.1  },
+  INNOVACION: { tx:-30,  ty:-90, sc:1.75 },
+};
+
+// ══════════════════════════════════════════════════
+// STATE
+let curZone = 'ALL', curCat = 'ALL';
+let scale = 1, tx = 0, ty = 0;
+let panning = false, panStart = {x:0,y:0};
+let selectedItem = null, wireOn = false;
+let renderer3d = null;
+
+// ══════════════════════════════════════════════════
+// INTRO
+function enterApp() {
+  document.getElementById('intro').classList.add('exit');
+  setTimeout(()=>{
+    document.getElementById('intro').style.display='none';
+    document.getElementById('app').classList.add('visible');
+    buildPlan();
+    renderStrip();
+  }, 800);
+}
+
+// ══════════════════════════════════════════════════
+// BUILD FLOOR PLAN
+function buildPlan() {
+  const svg = document.getElementById('plan-svg');
+  svg.innerHTML = '';
+
+  // Background
+  const bg = svgEl('rect',{x:0,y:0,width:860,height:560,fill:'#f5f0e8'});
+  svg.appendChild(bg);
+
+  // Outer wall
+  const wall = svgEl('rect',{x:35,y:35,width:790,height:490,fill:'none',stroke:'#1c1814','stroke-width':3,rx:2});
+  svg.appendChild(wall);
+
+  // SSHH
+  const sshh = svgEl('rect',{x:700,y:330,width:125,height:125,fill:'#ede5d4',stroke:'#c8b89a','stroke-width':1.5});
+  svg.appendChild(sshh);
+  appendText(svg,'SSHH',762,398,6,'#8a7e6e',2,'center');
+
+  // Zones
+  Object.entries(ZONE_DEFS).forEach(([zid,z])=>{
+    const rect = svgEl('rect',{
+      x:z.x,y:z.y,width:z.w,height:z.h,rx:3,
+      class:`z-area${curZone===zid?' active':''}`,
+      id:`za-${zid}`,
+    });
+    rect.addEventListener('click',()=>setZone(zid,null));
+    svg.appendChild(rect);
+
+    // Zone name at top
+    appendText(svg,z.label,z.cx,z.y+14,6.5,curZone===zid?'#8a4e1e':'#8a7e6e',2.5,'middle');
+
+    // Dimension note
+    if(zid==='HABILITADO') appendText(svg,'23.70m × 14.52m',z.cx,z.y+24,5.5,'#aaa09a',1,'middle');
+  });
+
+  // Wall lines between zones
+  [[220,40,220,330],[440,40,440,330],[40,330,820,330]].forEach(([x1,y1,x2,y2])=>{
+    svg.appendChild(svgEl('line',{x1,y1,x2,y2,stroke:'#c8b89a','stroke-width':1.2,'stroke-dasharray':'4,3'}));
+  });
+
+  // Items
+  const filtered = getFiltered();
+  ITEMS.forEach(item=>{
+    const visible = filtered.some(i=>i.id===item.id);
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','item-marker');
+    g.setAttribute('opacity', visible ? '1' : '0.12');
+    g.setAttribute('data-id', item.id);
+
+    const color = CAT_COLORS[item.cat];
+    const mx = item.px, my = item.py;
+
+    // 2D illustrated icon
+    const s = Math.min(14, Math.max(9, Math.sqrt(item.dims[0]*item.dims[2])/140));
+    drawIconFor(g, item, mx, my, s, color);
+
+    // Invisible hit area — rectangle covering the whole marker
+    const hit = svgEl('rect',{
+      x: mx - s*2, y: my - s*2,
+      width: s*4, height: s*4,
+      fill: 'transparent', stroke: 'none',
+      class: 'marker-hit'
+    });
+    g.appendChild(hit);
+
+    // Label
+    const lbl = svgEl('text',{
+      x:mx, y:my+s*1.8+6,
+      'text-anchor':'middle',
+      'font-family':'IBM Plex Mono, monospace',
+      'font-size':5.5,
+      fill: visible?'#6a5e4e':'#c8c0b0',
+      'letter-spacing':0.5,
+    });
+    lbl.textContent = item.id;
+    g.appendChild(lbl);
+
+    g.addEventListener('click', (e)=>{ 
+      e.stopPropagation();
+      if(visible) openDetail(item); 
+    });
+    g.style.pointerEvents = visible ? 'all' : 'none';
+    svg.appendChild(g);
+  });
+
+  applyTransform(false);
+}
+
+// ── 2D SILHOUETTE ICONS ─────────────────────────────────────
+// Each item type gets a hand-drawn flat SVG symbol (top-down or front view)
+const ICON_SHAPES = {
+  // Banco de trabajo / Mesa con tornillo de banco
+  'MOB-126': (g,cx,cy,s,c) => {
+    // Long worktable top view
+    rect2d(g,cx-s*1.6,cy-s*0.7,s*3.2,s*1.4,c,1);
+    // Vise (tornillo de banco) on left
+    rect2d(g,cx-s*1.9,cy-s*0.35,s*0.35,s*0.7,darken(c,0.2),0.8);
+    // Leg lines
+    line2d(g,cx-s*1.4,cy-s*0.7,cx-s*1.4,cy+s*0.7,c,0.5);
+    line2d(g,cx+s*1.4,cy-s*0.7,cx+s*1.4,cy+s*0.7,c,0.5);
+  },
+  // Mesa de trabajo genérica
+  'MOB-108': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.4,cy-s*0.6,s*2.8,s*1.2,c,1);
+    line2d(g,cx-s*1.1,cy-s*0.6,cx-s*1.1,cy+s*0.6,lighten(c,0.3),0.6);
+    line2d(g,cx+s*1.1,cy-s*0.6,cx+s*1.1,cy+s*0.6,lighten(c,0.3),0.6);
+  },
+  // Silla / asiento
+  'MOB-117': (g,cx,cy,s,c) => {
+    // Seat
+    rect2d(g,cx-s*0.7,cy-s*0.7,s*1.4,s*1.4,c,1);
+    // Backrest
+    rect2d(g,cx-s*0.7,cy-s*1.1,s*1.4,s*0.45,darken(c,0.15),1);
+  },
+  'MOB-118': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.75,cy-s*0.75,s*1.5,s*1.5,c,1);
+    rect2d(g,cx-s*0.75,cy-s*1.15,s*1.5,s*0.45,darken(c,0.15),1);
+    // Armrests
+    rect2d(g,cx-s*1.05,cy-s*0.75,s*0.3,s*1.1,darken(c,0.1),1);
+    rect2d(g,cx+s*0.75,cy-s*0.75,s*0.3,s*1.1,darken(c,0.1),1);
+  },
+  // Armario / Mueble de metal (front view)
+  'MOB-105': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.9,cy-s*1.2,s*1.8,s*2.4,c,1);
+    line2d(g,cx,cy-s*1.2,cx,cy+s*1.2,darken(c,0.2),0.8);
+    // Door handles
+    circle2d(g,cx-s*0.25,cy,s*0.12,darken(c,0.3));
+    circle2d(g,cx+s*0.25,cy,s*0.12,darken(c,0.3));
+    // Shelf lines
+    line2d(g,cx-s*0.9,cy-s*0.4,cx+s*0.9,cy-s*0.4,darken(c,0.15),0.5);
+    line2d(g,cx-s*0.9,cy+s*0.4,cx+s*0.9,cy+s*0.4,darken(c,0.15),0.5);
+  },
+  // Mesa estudiante
+  'MOB-114': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.9,cy-s*0.55,s*1.8,s*1.1,c,1);
+    line2d(g,cx-s*0.7,cy-s*0.55,cx-s*0.7,cy+s*0.55,lighten(c,0.3),0.5);
+  },
+  // Mesa docente
+  'MOB-168': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.1,cy-s*0.6,s*2.2,s*1.2,c,1);
+    rect2d(g,cx+s*0.4,cy-s*0.6,s*0.6,s*0.7,darken(c,0.1),0.8);
+  },
+  // Mueble bajo
+  'MOB-152': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.0,cy-s*0.55,s*2.0,s*1.1,c,1);
+    line2d(g,cx,cy-s*0.55,cx,cy+s*0.55,darken(c,0.2),0.7);
+    circle2d(g,cx-s*0.3,cy,s*0.1,darken(c,0.3));
+    circle2d(g,cx+s*0.3,cy,s*0.1,darken(c,0.3));
+  },
+  // Mesa computadora
+  'MOB-169': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.9,cy-s*0.55,s*1.8,s*1.1,c,1);
+    // Monitor suggestion
+    rect2d(g,cx-s*0.4,cy-s*0.45,s*0.8,s*0.55,darken(c,0.2),0.9);
+  },
+  // Mesa de corte grande
+  'MOB-140': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.6,cy-s*0.8,s*3.2,s*1.6,c,1);
+    // Grid lines on surface
+    for(let i=-1;i<=1;i++){
+      line2d(g,cx+i*s*0.7,cy-s*0.8,cx+i*s*0.7,cy+s*0.8,lighten(c,0.3),0.4);
+    }
+    line2d(g,cx-s*1.6,cy,cx+s*1.6,cy,lighten(c,0.3),0.4);
+  },
+
+  // ── MÁQUINAS ─────────────────────────────────────────
+  // Sierra circular de mesa
+  'ESP-355': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.1,cy-s*0.65,s*2.2,s*1.3,c,1);
+    // Blade circle
+    circle2d(g,cx,cy,s*0.5,darken(c,0.25));
+    circle2d(g,cx,cy,s*0.15,'white');
+    // Teeth suggestion
+    line2d(g,cx-s*0.5,cy,cx+s*0.5,cy,darken(c,0.3),0.6);
+    line2d(g,cx,cy-s*0.5,cx,cy+s*0.5,darken(c,0.3),0.6);
+  },
+  // Sierra cinta
+  'ESP-139': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.7,cy-s*1.1,s*1.4,s*2.2,c,1);
+    circle2d(g,cx,cy-s*0.6,s*0.4,darken(c,0.2));
+    circle2d(g,cx,cy+s*0.6,s*0.4,darken(c,0.2));
+    // Band
+    line2d(g,cx-s*0.4,cy-s*0.6,cx-s*0.4,cy+s*0.6,darken(c,0.3),1);
+    line2d(g,cx+s*0.4,cy-s*0.6,cx+s*0.4,cy+s*0.6,darken(c,0.3),1);
+  },
+  // Sierra radial
+  'ESP-329': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.2,cy,s*2.4,s*0.6,c,1);
+    // Arm
+    line2d(g,cx,cy-s*0.9,cx,cy,c,2);
+    circle2d(g,cx,cy-s*0.9,s*0.5,darken(c,0.2));
+    circle2d(g,cx,cy-s*0.9,s*0.2,'white');
+  },
+  // Trompo / Tupí
+  'ESP-128': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.8,cy-s*0.8,s*1.6,s*1.6,c,1);
+    circle2d(g,cx,cy,s*0.35,darken(c,0.25));
+    circle2d(g,cx,cy,s*0.1,'white');
+    // Fence
+    line2d(g,cx-s*0.8,cy+s*0.2,cx+s*0.8,cy+s*0.2,darken(c,0.3),1);
+  },
+  // Cepilladora
+  'ESP-152': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.5,cy-s*0.6,s*3.0,s*1.2,c,1);
+    // Infeed/outfeed arrows
+    line2d(g,cx-s*1.8,cy,cx-s*1.5,cy,darken(c,0.3),1.5);
+    line2d(g,cx+s*1.5,cy,cx+s*1.8,cy,darken(c,0.3),1.5);
+    // Roller
+    rect2d(g,cx-s*0.3,cy-s*0.6,s*0.6,s*1.2,darken(c,0.2),1);
+  },
+  // Lijadora de banda
+  'ESP-138': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.0,cy-s*0.7,s*2.0,s*1.4,c,1);
+    // Belt
+    rect2d(g,cx-s*0.7,cy-s*0.5,s*1.4,s*1.0,darken(c,0.15),0.9);
+    circle2d(g,cx-s*0.4,cy,s*0.3,darken(c,0.25));
+    circle2d(g,cx+s*0.4,cy,s*0.3,darken(c,0.25));
+  },
+  // Lijadora orbital columna
+  'ESP-155': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.6,cy-s*0.6,s*1.2,s*1.2,c,1);
+    circle2d(g,cx,cy,s*0.45,darken(c,0.2));
+    circle2d(g,cx,cy,s*0.15,'white');
+  },
+  // Torno para madera
+  'ESP-345': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.6,cy-s*0.5,s*3.2,s*1.0,c,1);
+    // Headstock
+    rect2d(g,cx-s*1.5,cy-s*0.45,s*0.7,s*0.9,darken(c,0.2),1);
+    // Tailstock
+    rect2d(g,cx+s*0.8,cy-s*0.35,s*0.5,s*0.7,darken(c,0.2),1);
+    // Spindle center line
+    line2d(g,cx-s*0.8,cy,cx+s*0.8,cy,lighten(c,0.3),0.6);
+  },
+  // Taladro columna
+  'ESP-347': (g,cx,cy,s,c) => {
+    // Column
+    rect2d(g,cx-s*0.2,cy-s*1.3,s*0.4,s*2.6,c,1);
+    // Head
+    rect2d(g,cx-s*0.7,cy-s*1.3,s*1.4,s*0.7,darken(c,0.15),1);
+    // Table
+    rect2d(g,cx-s*0.9,cy+s*0.1,s*1.8,s*0.3,darken(c,0.1),1);
+    // Chuck
+    circle2d(g,cx,cy-s*0.6,s*0.22,darken(c,0.3));
+  },
+  // Prensa hidráulica
+  'ESP-242': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.3,cy-s*1.2,s*0.6,s*2.4,c,1);
+    rect2d(g,cx-s*0.9,cy-s*1.2,s*1.8,s*0.3,darken(c,0.15),1);
+    rect2d(g,cx-s*0.9,cy+s*0.6,s*1.8,s*0.3,darken(c,0.15),1);
+    circle2d(g,cx,cy-s*0.3,s*0.25,darken(c,0.25));
+  },
+  // CNC / Ruteadora
+  'ESP-349': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.5,cy-s*1.0,s*3.0,s*2.0,c,1);
+    // Gantry
+    rect2d(g,cx-s*1.5,cy-s*0.15,s*3.0,s*0.3,darken(c,0.2),1);
+    circle2d(g,cx,cy-s*0.15,s*0.2,'white');
+    // Rail lines
+    line2d(g,cx-s*1.3,cy-s*0.9,cx-s*1.3,cy+s*0.9,darken(c,0.2),0.6);
+    line2d(g,cx+s*1.3,cy-s*0.9,cx+s*1.3,cy+s*0.9,darken(c,0.2),0.6);
+  },
+  'ESP-187': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.4,cy-s*0.9,s*2.8,s*1.8,c,1);
+    rect2d(g,cx-s*1.4,cy-s*0.15,s*2.8,s*0.3,darken(c,0.2),1);
+    circle2d(g,cx,cy-s*0.15,s*0.18,'white');
+    line2d(g,cx-s*1.2,cy-s*0.8,cx-s*1.2,cy+s*0.8,darken(c,0.2),0.5);
+    line2d(g,cx+s*1.2,cy-s*0.8,cx+s*1.2,cy+s*0.8,darken(c,0.2),0.5);
+  },
+  // Cortadora láser
+  'ESP-219': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.0,cy-s*0.75,s*2.0,s*1.5,c,1);
+    // Laser head
+    circle2d(g,cx,cy,s*0.2,darken(c,0.3));
+    // Laser beam
+    line2d(g,cx,cy,cx,cy+s*0.6,'#ffcc44',1.2);
+    // Rails
+    line2d(g,cx-s*0.8,cy-s*0.6,cx-s*0.8,cy+s*0.6,darken(c,0.2),0.6);
+    line2d(g,cx+s*0.8,cy-s*0.6,cx+s*0.8,cy+s*0.6,darken(c,0.2),0.6);
+  },
+  'ESP-356': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.3,cy-s*0.85,s*2.6,s*1.7,c,1);
+    circle2d(g,cx,cy,s*0.2,darken(c,0.3));
+    line2d(g,cx,cy,cx,cy+s*0.7,'#ffcc44',1.2);
+    line2d(g,cx-s*1.0,cy-s*0.7,cx-s*1.0,cy+s*0.7,darken(c,0.2),0.5);
+    line2d(g,cx+s*1.0,cy-s*0.7,cx+s*1.0,cy+s*0.7,darken(c,0.2),0.5);
+  },
+  // Engalletadora
+  'ESP-371': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.8,cy-s*0.6,s*1.6,s*1.2,c,1);
+    circle2d(g,cx-s*0.1,cy,s*0.45,darken(c,0.2));
+    rect2d(g,cx+s*0.35,cy-s*0.12,s*0.55,s*0.24,darken(c,0.3),1);
+  },
+  // Ruteadora portátil
+  'ESP-360': (g,cx,cy,s,c) => {
+    circle2d(g,cx,cy,s*0.7,c);
+    circle2d(g,cx,cy,s*0.35,darken(c,0.2));
+    circle2d(g,cx,cy,s*0.12,'white');
+  },
+  // Esmeril
+  'ESP-239': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.8,cy,s*1.6,s*0.5,c,1);
+    circle2d(g,cx-s*0.45,cy,s*0.42,darken(c,0.2));
+    circle2d(g,cx+s*0.45,cy,s*0.42,darken(c,0.2));
+    circle2d(g,cx-s*0.45,cy,s*0.15,'white');
+    circle2d(g,cx+s*0.45,cy,s*0.15,'white');
+  },
+
+  // ── COMPLEMENTARIO ───────────────────────────────────
+  // Computadora escritorio
+  'COM-300': (g,cx,cy,s,c) => {
+    // Monitor
+    rect2d(g,cx-s*0.8,cy-s*0.9,s*1.6,s*1.1,c,1);
+    rect2d(g,cx-s*0.6,cy-s*0.75,s*1.2,s*0.75,lighten(c,0.3),0.9);
+    // Stand
+    rect2d(g,cx-s*0.15,cy+s*0.2,s*0.3,s*0.3,darken(c,0.1),1);
+    rect2d(g,cx-s*0.4,cy+s*0.5,s*0.8,s*0.15,darken(c,0.1),1);
+  },
+  // Extintor
+  'COM-103': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.3,cy-s*0.2,s*0.6,s*1.1,'#b84a2a',1);
+    circle2d(g,cx,cy-s*0.2,s*0.3,'#b84a2a');
+    line2d(g,cx,cy-s*0.5,cx+s*0.5,cy-s*0.8,'#1c1814',1);
+  },
+  'COM-149': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.3,cy-s*0.2,s*0.6,s*1.1,'#b84a2a',1);
+    circle2d(g,cx,cy-s*0.2,s*0.3,'#b84a2a');
+    line2d(g,cx,cy-s*0.5,cx+s*0.5,cy-s*0.8,'#1c1814',1);
+  },
+  // Panel / Pizarra
+  'COM-120': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.3,cy-s*0.75,s*2.6,s*1.5,c,1);
+    rect2d(g,cx-s*1.1,cy-s*0.55,s*2.2,s*0.9,lighten(c,0.35),0.9);
+    // Marker lines
+    line2d(g,cx-s*0.7,cy-s*0.25,cx+s*0.3,cy-s*0.25,darken(c,0.3),0.8);
+    line2d(g,cx-s*0.7,cy+s*0.1,cx+s*0.1,cy+s*0.1,darken(c,0.3),0.8);
+  },
+  'COM-204': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.3,cy-s*0.75,s*2.6,s*1.5,c,1);
+    rect2d(g,cx-s*1.1,cy-s*0.55,s*2.2,s*0.9,lighten(c,0.4),0.9);
+    circle2d(g,cx+s*0.7,cy-s*0.3,s*0.15,'#ffcc44');
+  },
+  // Botiquín
+  'COM-119': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.7,cy-s*0.7,s*1.4,s*1.4,c,1);
+    rect2d(g,cx-s*0.15,cy-s*0.55,s*0.3,s*1.1,'white',1);
+    rect2d(g,cx-s*0.55,cy-s*0.15,s*1.1,s*0.3,'white',1);
+  },
+  // Proyector
+  'COM-121': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.7,cy-s*0.45,s*1.4,s*0.9,c,1);
+    circle2d(g,cx-s*0.3,cy,s*0.25,darken(c,0.2));
+    // Lens
+    circle2d(g,cx-s*0.3,cy,s*0.12,lighten(c,0.4));
+  },
+  // Medidor humedad
+  'COM-233': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.45,cy-s*0.8,s*0.9,s*1.6,c,1);
+    rect2d(g,cx-s*0.3,cy-s*0.6,s*0.6,s*0.6,lighten(c,0.3),0.9);
+    line2d(g,cx-s*0.1,cy+s*0.1,cx+s*0.1,cy+s*0.4,darken(c,0.3),1);
+  },
+
+  // ── MATERIALES ───────────────────────────────────────
+  // Tableros / planchas apiladas
+  'MAT-123': (g,cx,cy,s,c) => {
+    // Stack of sheets
+    for(let i=3;i>=0;i--){
+      rect2d(g,cx-s*1.2+i*1.5,cy-s*0.3+i*1.5,s*2.4,s*0.6,
+        i%2===0?c:lighten(c,0.2),1);
+    }
+  },
+  'MAT-161': (g,cx,cy,s,c) => {
+    for(let i=3;i>=0;i--){
+      rect2d(g,cx-s*1.2+i*1.5,cy-s*0.3+i*1.5,s*2.4,s*0.6,
+        i%2===0?c:lighten(c,0.2),1);
+    }
+  },
+  // Madera / listones
+  'MAT-163': (g,cx,cy,s,c) => {
+    for(let i=0;i<4;i++){
+      rect2d(g,cx-s*1.3,cy-s*0.9+i*s*0.5,s*2.6,s*0.35,
+        i%2===0?c:lighten(c,0.2),1);
+    }
+  },
+  'MAT-164': (g,cx,cy,s,c) => {
+    for(let i=0;i<4;i++){
+      rect2d(g,cx-s*1.3,cy-s*0.9+i*s*0.5,s*2.6,s*0.35,
+        i%2===0?c:lighten(c,0.2),1);
+    }
+  },
+  // Cola / líquido
+  'MAT-231': (g,cx,cy,s,c) => {
+    // Bottle shape
+    rect2d(g,cx-s*0.35,cy-s*0.2,s*0.7,s*1.1,c,1);
+    rect2d(g,cx-s*0.2,cy-s*0.5,s*0.4,s*0.35,darken(c,0.1),1);
+    rect2d(g,cx-s*0.12,cy-s*0.7,s*0.24,s*0.22,darken(c,0.2),1);
+  },
+  'MAT-309': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.35,cy-s*0.2,s*0.7,s*1.1,c,1);
+    rect2d(g,cx-s*0.2,cy-s*0.5,s*0.4,s*0.35,darken(c,0.1),1);
+    rect2d(g,cx-s*0.12,cy-s*0.7,s*0.24,s*0.22,darken(c,0.2),1);
+  },
+
+  // ── HERRAMIENTAS ─────────────────────────────────────
+  // Mazo
+  'HER-138': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.5,cy-s*0.4,s*1.0,s*0.8,c,1);
+    rect2d(g,cx-s*0.08,cy+s*0.4,s*0.16,s*0.9,darken(c,0.2),1);
+  },
+  // Formones (juego)
+  'HER-140': (g,cx,cy,s,c) => {
+    for(let i=0;i<4;i++){
+      const ox = (i-1.5)*s*0.35;
+      rect2d(g,cx+ox-s*0.12,cy-s*0.9,s*0.24,s*1.8,i%2===0?c:lighten(c,0.2),1);
+    }
+  },
+  // Sargentas
+  'HER-169': (g,cx,cy,s,c) => {
+    // C-clamp shape
+    rect2d(g,cx-s*0.1,cy-s*0.9,s*0.2,s*1.8,c,1);
+    rect2d(g,cx-s*0.7,cy-s*0.9,s*0.6,s*0.2,c,1);
+    rect2d(g,cx-s*0.7,cy+s*0.7,s*0.6,s*0.2,c,1);
+    circle2d(g,cx-s*0.55,cy+s*0.35,s*0.15,darken(c,0.2));
+  },
+  // Prensa C
+  'HER-175': (g,cx,cy,s,c) => {
+    const pts=`${cx-s*0.6},${cy-s*0.7} ${cx+s*0.2},${cy-s*0.7} ${cx+s*0.5},${cy} ${cx+s*0.2},${cy+s*0.7} ${cx-s*0.6},${cy+s*0.7}`;
+    const poly=svgEl('polygon',{points:pts,fill:c,stroke:darken(c,0.2),'stroke-width':0.5});
+    g.appendChild(poly);
+    circle2d(g,cx+s*0.5,cy,s*0.18,'white');
+  },
+  // Lijadora portátil
+  'HER-186': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*0.9,cy-s*0.45,s*1.8,s*0.9,c,1);
+    rect2d(g,cx-s*0.3,cy-s*0.75,s*0.6,s*0.35,darken(c,0.15),1);
+    circle2d(g,cx,cy,s*0.22,darken(c,0.25));
+  },
+  // Cepillos de carpintería
+  'HER-189': (g,cx,cy,s,c) => {
+    rect2d(g,cx-s*1.0,cy-s*0.35,s*2.0,s*0.7,c,1);
+    rect2d(g,cx-s*0.7,cy-s*0.7,s*1.0,s*0.38,darken(c,0.15),1);
+    // Blade
+    line2d(g,cx-s*0.7,cy+s*0.35,cx+s*0.3,cy+s*0.35,darken(c,0.3),1.2);
+  },
+};
+
+// Generic fallback by category
+function drawGenericIcon(g,cx,cy,s,c,cat) {
+  if(cat==='MOB'){
+    rect2d(g,cx-s,cy-s*0.6,s*2,s*1.2,c,1);
+    line2d(g,cx-s*0.7,cy-s*0.6,cx-s*0.7,cy+s*0.6,darken(c,0.2),0.5);
+    line2d(g,cx+s*0.7,cy-s*0.6,cx+s*0.7,cy+s*0.6,darken(c,0.2),0.5);
+  } else if(cat==='ESP'){
+    rect2d(g,cx-s*0.8,cy-s*0.8,s*1.6,s*1.6,c,1);
+    circle2d(g,cx,cy,s*0.4,darken(c,0.2));
+    circle2d(g,cx,cy,s*0.15,'white');
+  } else if(cat==='COM'){
+    rect2d(g,cx-s*0.7,cy-s*0.7,s*1.4,s*1.4,c,1);
+  } else if(cat==='MAT'){
+    for(let i=2;i>=0;i--) rect2d(g,cx-s+i*2,cy-s*0.25+i*2,s*2,s*0.5,i%2===0?c:lighten(c,0.2),1);
+  } else {
+    rect2d(g,cx-s*0.3,cy-s*1.0,s*0.6,s*2.0,c,1);
+    rect2d(g,cx-s*0.6,cy-s*1.0,s*1.2,s*0.35,darken(c,0.15),1);
+  }
+}
+
+function rect2d(g,x,y,w,h,fill,opacity=1) {
+  g.appendChild(svgEl('rect',{x,y,width:w,height:h,fill,opacity,stroke:darken(fill,0.15),'stroke-width':0.4,rx:1}));
+}
+function circle2d(g,cx,cy,r,fill) {
+  g.appendChild(svgEl('circle',{cx,cy,r,fill,stroke:darken(fill,0.15),'stroke-width':0.4}));
+}
+function line2d(g,x1,y1,x2,y2,stroke,sw=1) {
+  g.appendChild(svgEl('line',{x1,y1,x2,y2,stroke,'stroke-width':sw,'stroke-linecap':'round'}));
+}
+
+function drawIconFor(g, item, cx, cy, s, color) {
+  const fn = ICON_SHAPES[item.id];
+  if(fn) fn(g, cx, cy, s, color);
+  else drawGenericIcon(g, cx, cy, s, color, item.cat);
+
+  // Hover ring
+  const ring = svgEl('circle',{cx,cy,r:s*1.6,fill:'none',stroke:color,'stroke-width':1.2,opacity:0});
+  g.appendChild(ring);
+  g.addEventListener('mouseenter',()=>ring.setAttribute('opacity','0.7'));
+  g.addEventListener('mouseleave',()=>ring.setAttribute('opacity','0'));
+}
+
+function lighten(hex,amt) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&0xff)+amt*200);
+  const gv=Math.min(255,((n>>8)&0xff)+amt*200);
+  const b=Math.min(255,(n&0xff)+amt*200);
+  return `rgb(${~~r},${~~gv},${~~b})`;
+}
+function darken(hex,amt) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,((n>>16)&0xff)-amt*200);
+  const gv=Math.max(0,((n>>8)&0xff)-amt*200);
+  const b=Math.max(0,(n&0xff)-amt*200);
+  return `rgb(${~~r},${~~gv},${~~b})`;
+}
+
+function svgEl(tag,attrs) {
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+function appendText(parent,txt,x,y,fs,fill,ls,anchor='start') {
+  const t=svgEl('text',{x,y,'font-size':fs,fill,'letter-spacing':ls,'font-family':'IBM Plex Mono, monospace'});
+  if(anchor!=='start') t.setAttribute('text-anchor',anchor);
+  t.textContent=txt; parent.appendChild(t);
+}
+
+// ══════════════════════════════════════════════════
+// TRANSFORM
+function applyTransform(anim) {
+  const svg=document.getElementById('plan-svg');
+  svg.style.transition = anim ? 'transform 0.7s cubic-bezier(0.16,1,0.3,1)' : 'none';
+  svg.style.transform=`scale(${scale}) translate(${tx}px,${ty}px)`;
+}
+
+function doZoom(factor) {
+  scale=Math.min(3,Math.max(0.5,scale*factor));
+  applyTransform(true);
+}
+function resetView() {
+  scale=1; tx=0; ty=0; applyTransform(true);
+}
+
+// Pan — clic derecho en cualquier lugar (incluso sobre elementos)
+const pw=document.getElementById('plan-wrap');
+
+pw.addEventListener('contextmenu', e=>e.preventDefault()); // suppress right-click menu
+
+pw.addEventListener('mousedown',e=>{
+  if(e.button !== 2) return; // solo clic derecho
+  e.preventDefault();
+  panning=true;
+  panStart={x:e.clientX-tx*scale, y:e.clientY-ty*scale};
+  pw.style.cursor='grabbing';
+});
+window.addEventListener('mouseup',e=>{
+  if(e.button===2){ panning=false; pw.style.cursor='default'; }
+});
+window.addEventListener('mousemove',e=>{
+  if(!panning) return;
+  tx=(e.clientX-panStart.x)/scale;
+  ty=(e.clientY-panStart.y)/scale;
+  applyTransform(false);
+});
+pw.addEventListener('wheel',e=>{
+  e.preventDefault();
+  scale=e.deltaY<0?Math.min(3,scale*1.1):Math.max(0.5,scale/1.1);
+  applyTransform(false);
+},{passive:false});
+
+// ══════════════════════════════════════════════════
+// ZONE + CAT
+function setZone(z, btn) {
+  curZone=z;
+  document.querySelectorAll('.ztab').forEach(b=>b.classList.remove('active'));
+  const match = btn || document.querySelector(`[data-z="${z}"]`);
+  if(match) match.classList.add('active');
+
+  const v=ZONE_VIEWS[z]||ZONE_VIEWS.ALL;
+  scale=v.sc; tx=v.tx; ty=v.ty;
+  applyTransform(true);
+  buildPlan();
+  renderStrip();
+}
+
+function setCat(c, btn) {
+  curCat=c;
+  document.querySelectorAll('.cfilter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPlan();
+  renderStrip();
+}
+
+function getFiltered() {
+  return ITEMS.filter(i=>
+    (curZone==='ALL'||i.zona===curZone) &&
+    (curCat==='ALL'||i.cat===curCat)
+  );
+}
+
+// ══════════════════════════════════════════════════
+// STRIP
+function renderStrip() {
+  const items=getFiltered();
+  const inner=document.getElementById('strip-inner');
+  document.getElementById('strip-title').textContent=
+    `${curZone==='ALL'?'Todo el taller':curZone} · ${items.length} elementos`;
+
+  inner.innerHTML=items.map(item=>`
+    <div class="strip-card" data-c="${item.cat}" onclick="openDetail(ITEMS.find(i=>i.id==='${item.id}'))">
+      <div class="sc-code">${item.id}</div>
+      <div class="sc-name">${item.name}</div>
+      <div class="sc-qty">×${item.cant}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('item-strip').classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════════
+// DETAIL
+function openDetail(item) {
+  selectedItem=item;
+  wireOn=false;
+  document.getElementById('wire-btn').classList.remove('on');
+  document.getElementById('wire-btn').textContent='WIREFRAME';
+
+  document.getElementById('dp-code').textContent=item.id;
+  document.getElementById('dp-name').textContent=item.name;
+
+  const col=CAT_COLORS[item.cat];
+  document.getElementById('dp-cat-line').style.background=col;
+
+  document.getElementById('dp-badge').innerHTML=
+    `<span class="dp-badge" style="background:${col}18;color:${col};border:1px solid ${col}40;font-size:8px;letter-spacing:1px">${CAT_LABELS[item.cat]}</span>`;
+
+  const zl={HABILITADO:'Habilitado y Maquinado',ARMADO:'Área de Armado',ACABADOS:'Área de Acabados',INNOVACION:'Zona de Innovación',DEPOSITO:'Depósito / Almacén'};
+  document.getElementById('dp-props').innerHTML=`
+    <div class="prop-section">
+      <div class="prop-section-title">Identificación</div>
+      <div class="prop-item"><span class="prop-key">Código</span><span class="prop-val">${item.id}</span></div>
+      <div class="prop-item"><span class="prop-key">Categoría</span><span class="prop-val">${CAT_LABELS[item.cat]}</span></div>
+      <div class="prop-item"><span class="prop-key">Cantidad</span><span class="prop-val qty">${item.cant} unid.</span></div>
+      <div class="prop-item"><span class="prop-key">Ambiente</span><span class="prop-val zone">${zl[item.zona]}</span></div>
+    </div>
+    <div class="prop-section">
+      <div class="prop-section-title">Dimensiones</div>
+      <div class="prop-item"><span class="prop-key">Largo</span><span class="prop-val dim">${item.dims[0]} mm</span></div>
+      <div class="prop-item"><span class="prop-key">Ancho</span><span class="prop-val dim">${item.dims[1]} mm</span></div>
+      <div class="prop-item"><span class="prop-key">Alto</span><span class="prop-val dim">${item.dims[2]} mm</span></div>
+    </div>
+    <div class="prop-section">
+      <div class="prop-section-title">Modelo 3D</div>
+      <div class="prop-item"><span class="prop-key">Estado</span><span class="prop-val approx">⬡ Aproximado</span></div>
+      <div class="prop-item"><span class="prop-key">Archivo .OBJ</span><span class="prop-val" style="color:#aaa09a;font-size:9px">Pendiente</span></div>
+    </div>
+  `;
+
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('item-strip').classList.add('hidden');
+  init3D(item);
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('item-strip').classList.remove('hidden');
+  if(renderer3d){ renderer3d.dispose(); renderer3d=null; }
+}
+
+// ══════════════════════════════════════════════════
+// THREE.JS
+function init3D(item) {
+  const canvas=document.getElementById('dp-canvas');
+  const wrap=document.getElementById('dp-canvas-wrap');
+  if(renderer3d){ renderer3d.dispose(); renderer3d=null; }
+
+  const W=wrap.clientWidth, H=wrap.clientHeight;
+  renderer3d=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer3d.setSize(W,H);
+  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer3d.shadowMap.enabled=true;
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x1c1814);
+
+  const cam=new THREE.PerspectiveCamera(38,W/H,1,100000);
+  const [L,Wd,Ht]=item.dims;
+  const maxD=Math.max(L,Wd,Ht);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xf5e8d0,0.7));
+  const sun=new THREE.DirectionalLight(0xfff5e0,1.3);
+  sun.position.set(maxD,maxD*1.5,maxD); sun.castShadow=true; scene.add(sun);
+  const fill=new THREE.DirectionalLight(0xd0e8f5,0.4);
+  fill.position.set(-maxD,maxD*0.5,-maxD); scene.add(fill);
+
+  // Ground
+  const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(maxD*4,maxD*4),
+    new THREE.MeshStandardMaterial({color:0x14110e,roughness:1})
+  );
+  ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+  const grid=new THREE.GridHelper(maxD*3,12,0x2a2420,0x1e1a16);
+  scene.add(grid);
+
+  // Build geometry
+  const col=parseInt(CAT_COLORS[item.cat].slice(1),16);
+  buildGeom(scene,item,col,wireOn);
+
+  // Camera
+  const sph={theta:Math.PI/4.5, phi:Math.PI/3.2, r:maxD*2};
+  function updCam(){
+    cam.position.set(
+      sph.r*Math.sin(sph.phi)*Math.sin(sph.theta),
+      sph.r*Math.cos(sph.phi)+Ht*0.5,
+      sph.r*Math.sin(sph.phi)*Math.cos(sph.theta)
+    );
+    cam.lookAt(0,Ht*0.5,0);
+  }
+  updCam();
+
+  let drag=false,prev={x:0,y:0};
+  canvas.addEventListener('mousedown',e=>{drag=true;prev={x:e.clientX,y:e.clientY};});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{
+    if(!drag) return;
+    sph.theta-=(e.clientX-prev.x)*0.012;
+    sph.phi=Math.max(0.05,Math.min(Math.PI/2.1,sph.phi+(e.clientY-prev.y)*0.012));
+    prev={x:e.clientX,y:e.clientY}; updCam();
+  });
+  canvas.addEventListener('wheel',e=>{
+    sph.r=Math.max(maxD*0.4,Math.min(maxD*4,sph.r+e.deltaY*maxD*0.002));
+    updCam();
+  });
+
+  function loop(){
+    if(!renderer3d) return;
+    requestAnimationFrame(loop);
+    renderer3d.render(scene,cam);
+  }
+  loop();
+}
+
+function buildGeom(scene, item, color, wire) {
+  scene.children = scene.children.filter(c=>!(c.isMesh||c.isGroup));
+  const [L,W,H]=item.dims;
+  const mat=wire
+    ? new THREE.MeshBasicMaterial({color:0x4a7fa5,wireframe:true})
+    : new THREE.MeshStandardMaterial({color,metalness:item.cat==='ESP'?0.6:0.1,roughness:item.cat==='ESP'?0.4:0.7});
+  const dark=wire?mat:new THREE.MeshStandardMaterial({color:Math.max(0,color-0x222222),metalness:mat.metalness,roughness:mat.roughness});
+
+  if(item.cat==='MOB') {
+    // Table top + legs
+    [[L,W/9,W,0,H+W/18,0],
+     [W/10,H*0.9,W/10,-L/2+W/10,H*0.45,-W/2+W/10],
+     [W/10,H*0.9,W/10, L/2-W/10,H*0.45,-W/2+W/10],
+     [W/10,H*0.9,W/10,-L/2+W/10,H*0.45, W/2-W/10],
+     [W/10,H*0.9,W/10, L/2-W/10,H*0.45, W/2-W/10],
+    ].forEach(([lx,wx,hx,px,py,pz],i)=>{
+      const m=new THREE.Mesh(new THREE.BoxGeometry(lx,hx,wx), i===0?mat:dark);
+      m.position.set(px,py,pz); m.castShadow=true; scene.add(m);
+    });
+  } else if(item.cat==='ESP') {
+    // Machine body
+    const body=new THREE.Mesh(new THREE.BoxGeometry(L*0.7,H*0.7,W*0.7),mat);
+    body.position.set(0,H*0.35,0); body.castShadow=true; scene.add(body);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(L*0.5,H*0.15,W*0.5),dark);
+    top.position.set(0,H*0.77,0); top.castShadow=true; scene.add(top);
+    const cyl=new THREE.Mesh(new THREE.CylinderGeometry(W*0.08,W*0.1,H*0.3,16),
+      new THREE.MeshStandardMaterial({color:0x888880,metalness:0.8,roughness:0.2}));
+    cyl.position.set(0,H*0.95,0); scene.add(cyl);
+  } else {
+    const box=new THREE.Mesh(new THREE.BoxGeometry(L,H,W),mat);
+    box.position.set(0,H/2,0); box.castShadow=true; scene.add(box);
+  }
+
+  // Re-add grid and ground
+  scene.add(new THREE.GridHelper(Math.max(L,W)*3,12,0x2a2420,0x1e1a16));
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(Math.max(L,W)*4,Math.max(L,W)*4),
+    new THREE.MeshStandardMaterial({color:0x14110e,roughness:1}));
+  ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+}
+
+function toggleWire() {
+  wireOn=!wireOn;
+  const btn=document.getElementById('wire-btn');
+  btn.classList.toggle('on',wireOn);
+  btn.textContent=wireOn?'SÓLIDO':'WIREFRAME';
+  if(selectedItem) init3D(selectedItem);
+}
+</script>
+</body>
+</html>
